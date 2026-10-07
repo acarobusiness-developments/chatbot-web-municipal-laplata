@@ -1,0 +1,831 @@
+{
+  "name": "Chatbot Municipal 360 - Web Widget API (Texto & Voz)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "municipal-web-chat",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-web-chat",
+      "name": "Webhook POST (Mensajes Web Chat)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-1200, 360],
+      "webhookId": "municipal-web-chat-post"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ====================================================================\n// ⚙️ PANEL DE CONFIGURACIÓN CENTRAL - MUNICIPALIDAD DE LA PLATA\n// ====================================================================\n// Cualquier persona sin conocimientos técnicos puede personalizar el municipio\n// cambiando únicamente estos valores en 60 segundos:\nconst CONFIG_MUNICIPIO = {\n  nombre_municipio: \"Municipalidad de La Plata\",\n  provincia_region: \"Buenos Aires, Argentina\",\n  eslogan: \"Ciudad Capital - Gestión Abierta y Cercana 24/7\",\n  portal_web: \"https://laplata.gob.ar\",\n  portal_tramites: \"https://tramites.laplata.gob.ar\",\n  portal_rentas_pagos: \"https://apr.laplata.gob.ar\",\n  portal_juzgado_multas: \"https://faltas.laplata.gob.ar\",\n  portal_turismo: \"https://turismo.laplata.gob.ar\",\n  telefono_atencion_vecinal: \"147\",\n  telefono_emergencias_salud: \"107\",\n  telefono_defensa_civil: \"103\",\n  telefono_seguridad_urbana: \"911\",\n  google_drive_folder_id: \"15RAFPM8n1VbhjlC2f8MaEuNLCp2ZZqvv\",\n  google_drive_folder_url: \"https://drive.google.com/drive/folders/15RAFPM8n1VbhjlC2f8MaEuNLCp2ZZqvv?usp=drive_link\",\n  profile_picture_url: \"https://files.catbox.moe/351dpp.jpg\",\n  redes_sociales: {\n    instagram: \"@laplataciudad\",\n    facebook: \"/LaPlataCiudad\",\n    x_twitter: \"@LaPlataCiudad\"\n  },\n  fuente_conocimiento_notebooklm: \"Base Oficial de Normativas y Guía de Trámites La Plata 2026\"\n};\n\nconst rawIncoming = $node[\"Webhook POST (Mensajes Web Chat)\"] ? $node[\"Webhook POST (Mensajes Web Chat)\"].json : $input.first().json;\nconst payload = rawIncoming.body || rawIncoming;\n\nconst sessionId = payload.sessionId || payload.userId || 'web-session-' + Date.now();\nconst userName = payload.userName || payload.name || 'Vecino/Visitante';\nlet messageType = payload.messageType || (payload.audioBase64 ? 'audio' : 'text');\nlet messageText = payload.message || payload.text || '';\nlet audioBase64 = payload.audioBase64 || '';\nlet userPreference = payload.userPreference || 'auto'; // 'auto', 'text', 'voice'\n\nconst cleanText = messageText.trim().toLowerCase();\nlet action = payload.action || 'process_query';\n\nif (cleanText === 'hola' || cleanText === 'inicio' || cleanText === 'menu' || cleanText === 'empezar' || cleanText === 'comenzar' || cleanText === 'buenas' || action === 'send_welcome') {\n  action = 'send_welcome';\n} else if (cleanText.includes('btn_mode_text') || cleanText.includes('seguir con msj') || cleanText.includes('solo texto') || cleanText === '1' || cleanText === 'modo texto' || cleanText === 'texto' || cleanText.includes('prefiero texto')) {\n  action = 'set_pref_text';\n  userPreference = 'text';\n} else if (cleanText.includes('btn_mode_voice') || cleanText.includes('seguir por voz') || cleanText.includes('nota de voz') || cleanText.includes('audio') || cleanText === '2' || cleanText === 'modo voz' || cleanText === 'voz' || cleanText.includes('prefiero audio')) {\n  action = 'set_pref_voice';\n  userPreference = 'voice';\n} else if (cleanText.includes('cambiar modo') || cleanText.includes('cambiar preferencia')) {\n  action = 'send_welcome';\n}\n\nconst spokenWelcome = `¡Hola, ${userName}! Te damos la bienvenida al Asistente Virtual Oficial de la ${CONFIG_MUNICIPIO.nombre_municipio}. Estoy aquí para resolver tus dudas las 24 horas sobre trámites, licencias de conducir, tasas de APR, multas de tránsito, turismo o normativas. ¿Cómo prefieres que nos comuniquemos hoy? Puedes elegir seguir con mensaje escrito o seguir por voz con los botones en pantalla.`;\n\nreturn {\n  json: {\n    config: CONFIG_MUNICIPIO,\n    sessionId,\n    userName,\n    messageType,\n    messageText,\n    cleanText,\n    audioBase64,\n    action,\n    userPreference,\n    spokenWelcome,\n    timestamp: new Date().toISOString()\n  }\n};\n"
+      },
+      "id": "code-web-parser",
+      "name": "⚙️ Configuración & Parser Web",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-940, 360]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.messageType }}",
+              "rightValue": "audio",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-is-audio",
+      "name": "¿Es Mensaje de Voz?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [-700, 360]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nlet rawBase64 = item.audioBase64 || '';\nlet originalHeader = '';\n\nif (rawBase64.includes(',')) {\n  const parts = rawBase64.split(',');\n  originalHeader = parts[0];\n  rawBase64 = parts[1];\n}\n\nlet ext = 'webm';\nlet mime = 'audio/webm';\nif (originalHeader.includes('audio/ogg') || originalHeader.includes('ogg')) {\n  ext = 'ogg';\n  mime = 'audio/ogg';\n} else if (originalHeader.includes('audio/mp4') || originalHeader.includes('mp4')) {\n  ext = 'mp4';\n  mime = 'audio/mp4';\n} else if (originalHeader.includes('audio/wav') || originalHeader.includes('wav')) {\n  ext = 'wav';\n  mime = 'audio/wav';\n} else if (originalHeader.includes('audio/mp3') || originalHeader.includes('mp3') || originalHeader.includes('mpeg')) {\n  ext = 'mp3';\n  mime = 'audio/mp3';\n}\n\nreturn {\n  json: {\n    ...item,\n    audioExt: ext,\n    audioMime: mime\n  },\n  binary: {\n    data: {\n      data: rawBase64,\n      mimeType: mime,\n      fileName: `voice_input.${ext}`,\n      fileExtension: ext\n    }\n  }\n};\n"
+      },
+      "id": "code-prepare-audio-binary",
+      "name": "Preparar Binario de Audio",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-480, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/audio/transcriptions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "whisper-1"
+            },
+            {
+              "name": "language",
+              "value": "es"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "openai-whisper-node",
+      "name": "OpenAI Whisper (Voz a Texto)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-260, 200],
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "openAiApi": {
+          "id": "11Vo9TKbiyO0mnz9",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst audioTranscription = (item.text || item.message || '').trim();\nconst originalData = $node[\"⚙️ Configuración & Parser Web\"].json;\n\nlet messageText = audioTranscription;\nlet cleanText = audioTranscription.toLowerCase();\n\nif (!cleanText || cleanText.length === 0 || item.error) {\n  messageText = 'Mensaje de voz recibido. ¿Cómo puedo ayudarte?';\n  cleanText = 'hola';\n}\n\nreturn {\n  json: {\n    ...originalData,\n    messageText: messageText,\n    cleanText: cleanText,\n    audioTranscribed: true,\n    userPreference: 'voice'\n  }\n};\n"
+      },
+      "id": "code-merge-transcription",
+      "name": "Consolidar Audio Transcrito",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-40, 200]
+    },
+    {
+      "parameters": {
+        "mode": "rules",
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "r1",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "send_welcome",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Bienvenida y Menú"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "r2",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "set_pref_text",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Preferencia Texto"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "r3",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "set_pref_voice",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Preferencia Voz"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "r4",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "process_query",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Consulta al Agente IA"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "switch-router-actions",
+      "name": "Enrutador de Comandos Web",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [200, 360]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst cfg = item.config || {};\n\nconst welcomeText = `🏛️ **¡Hola, ${item.userName || 'Vecino/a'}! Te damos la bienvenida al Asistente Virtual Oficial de la ${cfg.nombre_municipio || 'Municipalidad de La Plata'}.**\\n*${cfg.eslogan || 'Ciudad Capital - Gestión 24/7'}*\\n\\nEstoy aquí para resolver tus dudas las 24 horas sobre trámites, servicios y turismo:\\n\\n• 🚗 **Trámites & Licencias de Conducir (Turnos)**\\n• 💳 **Tasas Municipales, Deudas y Pagos en APR**\\n• ⚖️ **Multas de Tránsito y Descargos**\\n• 🛠️ **Reclamos y Cuadrillas Urbanas 147**\\n• 🌲 **Turismo, Cultura y Secretos de la Ciudad**\\n• 📂 **Normativas y Base Documental**\\n\\n¿Cómo prefieres comunicarte hoy? Puedes elegir una de las siguientes opciones:`;\n\nconst quickReplies = [\n  { id: 'btn_mode_text', title: 'Seguir con msj 📝', payload: 'btn_mode_text' },\n  { id: 'btn_mode_voice', title: 'Seguir por voz 🎙️', payload: 'btn_mode_voice' },\n  { id: 'btn_licencias', title: '🚗 Licencia de Conducir', payload: '¿Cómo renuevo mi licencia de conducir?' },\n  { id: 'btn_tasas', title: '💳 Consultar Tasas APR', payload: '¿Dónde pago mis tasas municipales de APR?' },\n  { id: 'btn_turismo', title: '🌲 Guía Turística & Secretos', payload: '¿Qué lugares históricos y secretos tiene la ciudad?' }\n];\n\nreturn {\n  json: {\n    ...item,\n    responseText: welcomeText,\n    spokenText: item.spokenWelcome || '¡Hola! Te damos la bienvenida al Asistente Virtual Oficial de la Municipalidad de La Plata. ¿Cómo prefieres comunicarte hoy? Elige seguir con mensaje o seguir por voz.',\n    outputMode: item.userPreference === 'voice' ? 'voice' : 'text',\n    quickReplies: quickReplies\n  }\n};\n"
+      },
+      "id": "code-welcome-response",
+      "name": "Generar Bienvenida Web",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [520, 140]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst ackText = `✅ **Perfecto. He configurado tus respuestas en modo TEXTO 📝.**\\n\\nA partir de este momento recibirás todas las explicaciones, requisitos y enlaces oficiales por escrito.\\n\\n¿En qué trámite, tasa de APR o consulta turística te puedo ayudar hoy?`;\n\nconst quickReplies = [\n  { id: 'btn_licencia', title: '🚗 Turno Licencia', payload: 'Quiero un turno para licencia' },\n  { id: 'btn_infraccion', title: '⚖️ Consultar Multas', payload: 'Consultar infracciones de tránsito' },\n  { id: 'btn_tasas', title: '💳 Deuda Tasas APR', payload: 'Consultar deuda de tasas en APR' },\n  { id: 'btn_reclamo', title: '🛠️ Reclamo 147', payload: 'Quiero registrar un reclamo' },\n  { id: 'btn_turismo', title: '🗺️ Turismo y Paseos', payload: 'Recomiéndame paseos y restaurantes' }\n];\n\nreturn {\n  json: {\n    ...item,\n    responseText: ackText,\n    spokenText: 'Perfecto. He configurado tus respuestas en modo texto. A partir de este momento recibirás todas las respuestas por escrito. ¿En qué te puedo ayudar hoy?',\n    outputMode: 'text',\n    savedPreference: 'text',\n    quickReplies: quickReplies\n  }\n};\n"
+      },
+      "id": "code-pref-text",
+      "name": "Confirmar Modo Texto",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [520, 260]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst ackText = `🎙️ **¡Excelente! He configurado tus respuestas en modo AUDIO / VOZ 🔊.**\\n\\nA partir de ahora te enviaré notas de voz con explicaciones claras, acompañadas de los enlaces oficiales debajo.\\n\\n¿Qué consulta deseas realizar? Puedes hablarle al micrófono o escribir.`;\n\nconst quickReplies = [\n  { id: 'btn_licencia', title: '🚗 Turno Licencia', payload: 'Quiero un turno para licencia' },\n  { id: 'btn_infraccion', title: '⚖️ Consultar Multas', payload: 'Consultar infracciones de tránsito' },\n  { id: 'btn_tasas', title: '💳 Deuda Tasas APR', payload: 'Consultar deuda de tasas en APR' },\n  { id: 'btn_reclamo', title: '🛠️ Reclamo 147', payload: 'Quiero registrar un reclamo' },\n  { id: 'btn_turismo', title: '🗺️ Turismo y Paseos', payload: 'Recomiéndame paseos y restaurantes' }\n];\n\nreturn {\n  json: {\n    ...item,\n    responseText: ackText,\n    spokenText: '¡Excelente! He configurado tus respuestas en modo audio. A partir de ahora escucharás mis respuestas con voz natural, acompañadas de los enlaces oficiales por escrito. ¿Qué consulta deseas realizar?',\n    outputMode: 'voice',\n    savedPreference: 'voice',\n    quickReplies: quickReplies\n  }\n};\n"
+      },
+      "id": "code-pref-voice",
+      "name": "Confirmar Modo Voz",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [520, 380]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Eres el Asistente Virtual Oficial de Inteligencia Artificial de la {{ $json.config.nombre_municipio || 'Municipalidad de La Plata' }}.\nTu propósito es atender a VECINOS y VISITANTES de la ciudad con calidez, profesionalismo y resolución integral 24/7 en el Portal Web.\n\nDATOS DE LA INTERACCIÓN:\n- Vecino/a o Turista: {{ $json.userName }}\n- Sesión Web: {{ $json.sessionId }}\n- Preferencia de Salida: {{ $json.userPreference }}\n- Mensaje actual: \"{{ $json.messageText }}\"\n\n🛑 PROTOCOLO OBLIGATORIO DE IDENTIFICACIÓN (APLICA IGUALMENTE EN TEXTO Y VOZ):\nAntes de emitir multas, liquidaciones de deuda, turnos o tickets de reclamo, SIEMPRE debes contar con el dato identificatorio real proporcionado por el vecino en este mensaje o en el historial reciente:\n1. ⚖️ MULTAS E INFRACCIONES DE TRÁNSITO: Si consulta por multas/infracciones y NO hay Patente/Dominio ni DNI en el mensaje ni en el historial previo, NO inventes datos ni asumas infracciones: PÍDELE amablemente su Patente (ej: AF123GH) o número de DNI.\n2. 💳 DEUDAS Y TASAS EN APR: Si consulta por deuda/tasas y NO hay DNI, CUIT, Partida Inmobiliaria ni Patente en la conversación, PÍDELE dicho dato para poder consultar el padrón.\n3. 🚗 TURNOS PARA LICENCIAS: Si solicita turno y NO hay DNI en la conversación, PÍDESELO amablemente.\n4. 🛠️ RECLAMOS Y REPORTES 147: Si reporta un problema (luz, bache, poda, basura, sumidero) y NO indicó la calle/dirección exacta o intersección, PÍDELE la ubicación exacta antes de generar el ticket.\n5. 🌲 TURISMO, NORMATIVAS Y GUÍAS: Responde de inmediato con Google Drive, Guía Turística o Directorio Oficial.\n\n🧠 REGLAS DE CONTEXTO, MEMORIA Y PREGUNTAS DE SEGUIMIENTO:\n1. PREGUNTAS DE SEGUIMIENTO (ej: \"¿Cómo pago?\", \"¿Dónde se paga?\", \"¿Cómo hago el descargo?\", \"¿Qué requisitos necesito?\"):\n- Si en la conversación ya se consultó una infracción, deuda de APR, turno o reclamo, ¡NO le vuelvas a pedir el DNI ni la Patente!\n- Explícale directamente el procedimiento paso a paso para pagar (Portal oficial con tarjeta de débito/crédito, QR interoperable de Mercado Pago / Cuenta DNI / BNA+, o ventanillas de PagoFácil / RapiPago / Red Link) y facilítale el enlace oficial correspondiente.\n\n2. RESPUESTAS CORTAS CON DATOS (ej: si el usuario envía solo \"AE234HG\", \"38112233\", \"Calle 12 y 54\"):\n- Si el mensaje contiene únicamente una patente, DNI o dirección (porque tú se la solicitaste en el mensaje anterior), ASÓCIALO de inmediato al trámite en curso e invoca la base de datos correspondiente.\n\n3. REUTILIZAR DATOS YA PROPORCIONADOS:\n- Si el usuario ya mencionó su DNI, Patente o Dirección en mensajes anteriores del chat, REUTILÍZALO sin volver a pedírselo.\n\nFORMATO DE RESPUESTA:\n- Sé empático, formal y resolutivo.\n- Coloca los enlaces oficiales (.gob.ar) al pie.",
+        "options": {
+          "systemMessage": "Eres el Asistente Virtual Oficial de la Municipalidad de La Plata en la Web. Eres 100% resolutivo y empático. Solicitas Patente o DNI antes de consultar infracciones o deudas si el usuario aún no los proporcionó, mantienes la continuidad de la conversación, y respondes preguntas de seguimiento sobre pagos y trámites sin volver a pedir datos ya ingresados.",
+          "maxIterations": 15
+        }
+      },
+      "id": "ai-agent-municipal-web",
+      "name": "Agente IA Municipal 360 Web",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [520, 540]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "id": "openai-chat-model",
+      "name": "OpenAI Chat Model (GPT-4o Mini)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [240, 760],
+      "credentials": {
+        "openAiApi": {
+          "id": "11Vo9TKbiyO0mnz9",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.sessionId || 'web_default_session' }}",
+        "contextWindowLength": 20
+      },
+      "id": "memory-window-node",
+      "name": "Memoria Conversacional por Sesión Web",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [360, 760]
+    },
+    {
+      "parameters": {
+        "name": "consultar_deuda_y_pagos_apr",
+        "description": "Base de Datos Oficial de la Agencia Platense de Recaudación (APR). Invoca esta herramienta pasando el DNI, CUIT, Partida Inmobiliaria o Patente del vecino para obtener su estado de deuda y código de pago digital.",
+        "jsCode": "// SIMULACIÓN REALISTA DE BASE DE DATOS APR (RENTAS LA PLATA)\nconst inputQuery = (typeof query === 'string' ? query : (query ? JSON.stringify(query) : '')).trim();\nconst portal_rentas_pagos = 'https://apr.laplata.gob.ar';\n\nconst cuitMatch = inputQuery.match(/[0-9]{2}-?[0-9]{8}-?[0-9]{1}/);\nconst dniMatch = inputQuery.match(/[0-9]{7,8}/);\nconst patenteMatch = inputQuery.match(/[A-Za-z]{2}\\s?[0-9]{3}\\s?[A-Za-z]{2}/) || inputQuery.match(/[A-Za-z]{3}\\s?[0-9]{3}/);\nconst partidaMatch = inputQuery.match(/partida\\s*[:#]?\\s*([0-9]+)/i) || inputQuery.match(/lp-?[0-9]{4,8}/i);\n\nif (!dniMatch && !cuitMatch && !patenteMatch && !partidaMatch) {\n  return JSON.stringify({\n    estado: 'DATOS_INSUFICIENTES',\n    mensaje: 'Para consultar el padrón de APR de La Plata se requiere que el vecino proporcione su DNI, CUIT, Número de Partida Inmobiliaria o Patente del vehículo. Pídeselo amablemente al vecino antes de consultar.'\n  });\n}\n\nconst idStr = patenteMatch ? patenteMatch[0].toUpperCase().replace(/\\s+/g, '') : (partidaMatch ? (partidaMatch[1] || partidaMatch[0]) : (cuitMatch ? cuitMatch[0] : dniMatch[0]));\n\nconst hashNum = idStr.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);\nconst periodosAdeudados = (hashNum % 3) + 1;\nconst montoPorPeriodo = 4250 + ((hashNum % 5) * 850);\nconst totalSinDescuento = periodosAdeudados * montoPorPeriodo;\nconst descuentoBuenContribuyente = Math.round(totalSinDescuento * 0.15);\nconst totalConDescuento = totalSinDescuento - descuentoBuenContribuyente;\nconst codigoPagoElectronico = `APR-${idStr.replace(/[^A-Za-z0-9]/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`;\nconst codigoBarras = `048${Math.floor(100000000000 + Math.random() * 900000000000)}`;\n\nconst resultadoAPR = {\n  ente_recaudador: 'Agencia Platense de Recaudación (APR - Municipalidad de La Plata)',\n  identificador_consultado: idStr,\n  titular: 'Contribuyente Registrado en Padrón La Plata',\n  tributo_consultado: (patenteMatch || inputQuery.toLowerCase().includes('patente') || inputQuery.toLowerCase().includes('auto')) ? 'Impuesto a los Automotores / Motovehículos' : 'Tasa por Servicios Urbanos Municipales (SUM)',\n  estado_cuenta: 'Deuda Regularizable',\n  detalle_periodos: [\n    { cuota: 'Cuota 01/2026', vencimiento: '10/01/2026', importe: `$${montoPorPeriodo.toLocaleString('es-AR')}`, estado: 'Vencido' },\n    ...(periodosAdeudados > 1 ? [{ cuota: 'Cuota 02/2026', vencimiento: '10/02/2026', importe: `$${montoPorPeriodo.toLocaleString('es-AR')}`, estado: 'Vencido' }] : []),\n    ...(periodosAdeudados > 2 ? [{ cuota: 'Cuota 03/2026', vencimiento: '10/03/2026', importe: `$${montoPorPeriodo.toLocaleString('es-AR')}`, estado: 'Vencido' }] : [])\n  ],\n  total_liquidado: `$${totalSinDescuento.toLocaleString('es-AR')}`,\n  beneficio_pago_contado_15off: `$${totalConDescuento.toLocaleString('es-AR')} (Ahorras $${descuentoBuenContribuyente.toLocaleString('es-AR')})`,\n  codigo_pago_link_banelco: codigoPagoElectronico,\n  codigo_barra_ventanilla: codigoBarras,\n  medios_habilitados: 'Pago Online con Tarjeta de Débito/Crédito, QR interoperable (Mercado Pago, Cuenta DNI, BNA+), PagoFácil o RapiPago.',\n  portal_pago_oficial: portal_rentas_pagos\n};\n\nreturn JSON.stringify(resultadoAPR);",
+        "specifyInputSchema": false
+      },
+      "id": "tool-apr-bbdd",
+      "name": "Tool: Base de Datos APR (Deudas & Pagos)",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1,
+      "position": [480, 760]
+    },
+    {
+      "parameters": {
+        "name": "consultar_infracciones_juzgado_faltas",
+        "description": "Base de Datos de Infracciones del Juzgado de Faltas de La Plata. Invoca esta herramienta pasando la Patente o DNI del vecino para consultar actas de tránsito y descuento por pago voluntario.",
+        "jsCode": "// SIMULACIÓN REALISTA DE JUZGADO DE FALTAS DE LA PLATA\nconst inputQuery = (typeof query === 'string' ? query : (query ? JSON.stringify(query) : '')).trim();\nconst portal_juzgado_multas = 'https://faltas.laplata.gob.ar';\n\nconst patenteMatch = inputQuery.match(/[A-Za-z]{2}\\s?[0-9]{3}\\s?[A-Za-z]{2}/) || inputQuery.match(/[A-Za-z]{3}\\s?[0-9]{3}/);\nconst dniMatch = inputQuery.match(/[0-9]{7,8}/);\n\nif (!patenteMatch && !dniMatch) {\n  return JSON.stringify({\n    estado: 'DATOS_INSUFICIENTES',\n    mensaje: 'Para consultar el registro oficial de infracciones del Juzgado de Faltas de La Plata se requiere la Patente/Dominio del vehículo (ej: AF123GH) o el número de DNI del titular. Por favor, solicita este dato al vecino antes de consultar el sistema.'\n  });\n}\n\nconst idStr = patenteMatch ? patenteMatch[0].toUpperCase().replace(/\\s+/g, '') : dniMatch[0];\nconst numeroActa = `ACT-LP-${Math.floor(100000 + Math.random() * 900000)}`;\nconst valorOriginal = 38500;\nconst valorPagoVoluntario = valorOriginal * 0.5;\n\nreturn JSON.stringify({\n  juzgado: 'Juzgado de Faltas Municipal de La Plata (Sede Calle 48 entre 10 y 11)',\n  identificador_consultado: idStr,\n  estado: 'ACTA_PENDIENTE_DE_RESOLUCION',\n  infracciones: [\n    {\n      acta_numero: numeroActa,\n      fecha_infraccion: '15/01/2026 11:30 hs',\n      ubicacion: 'Avenida 7 y Calle 54 (Centro, La Plata)',\n      motivo: 'Exceso de velocidad / Inobservancia de señalización vial luminosa',\n      monto_original: `$${valorOriginal.toLocaleString('es-AR')}`,\n      monto_pago_voluntario_50off: `$${valorPagoVoluntario.toLocaleString('es-AR')} (Beneficio primeros 30 días)`,\n      plazo_pago_voluntario: 'Vence en 15 días hábiles',\n      codigo_pago_electronico: `FALTAS-${numeroActa}`\n    }\n  ],\n  procedimiento_descargo: 'Puede presentar su descargo 100% online adjuntando documentación de prueba o solicitar audiencia con el Juez de Faltas.',\n  portal_oficial_faltas: portal_juzgado_multas\n});",
+        "specifyInputSchema": false
+      },
+      "id": "tool-faltas-bbdd",
+      "name": "Tool: Base de Datos Juzgado de Faltas (Infracciones)",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1,
+      "position": [600, 760]
+    },
+    {
+      "parameters": {
+        "name": "reservar_turno_municipal",
+        "description": "Sistema Oficial de Turnos de Licencias de Conducir de La Plata. Invoca esta herramienta pasando el DNI y trámite del vecino para confirmar el turno y emitir el código oficial.",
+        "jsCode": "// SIMULACIÓN REALISTA DE SISTEMA DE TURNOS MUNICIPALES LA PLATA\nconst inputQuery = (typeof query === 'string' ? query : (query ? JSON.stringify(query) : '')).trim();\nconst portal_tramites = 'https://tramites.laplata.gob.ar';\n\nconst dniMatch = inputQuery.match(/[0-9]{7,8}/);\n\nif (!dniMatch) {\n  return JSON.stringify({\n    estado: 'DATOS_INSUFICIENTES',\n    mensaje: 'Para agendar y reservar un turno oficial de Licencia de Conducir en La Plata se requiere obligatoriamente el número de DNI del titular. Por favor, solicítale el DNI al vecino antes de consultar.'\n  });\n}\n\nconst dni = dniMatch[0];\n\nlet sede = 'Sede Central de Licencias (Calle 20 y 50)';\nif (inputQuery.toLowerCase().includes('hornos')) sede = 'Centro Comunal Los Hornos (Av. 66 y 143)';\nif (inputQuery.toLowerCase().includes('city bell') || inputQuery.toLowerCase().includes('bell')) sede = 'Centro Comunal City Bell (Cantilo e/ 19 y 20)';\nif (inputQuery.toLowerCase().includes('villa elvira')) sede = 'Centro Comunal Villa Elvira (Av. 7 y 82)';\n\nlet tramite = 'Renovación de Licencia de Conducir';\nif (inputQuery.toLowerCase().includes('original') || inputQuery.toLowerCase().includes('primera vez')) tramite = 'Licencia Original (Primera Vez)';\nif (inputQuery.toLowerCase().includes('duplicado')) tramite = 'Duplicado de Licencia por Pérdida/Robo';\nif (inputQuery.toLowerCase().includes('ampliacion') || inputQuery.toLowerCase().includes('categoria')) tramite = 'Ampliación de Categoría de Licencia';\n\nconst fechaTurno = 'Miércoles 18 de Marzo de 2026';\nconst horaTurno = '09:30 hs';\nconst codigoTurno = `TUR-LP-2026-${Math.floor(10000 + Math.random() * 90000)}`;\n\nreturn JSON.stringify({\n  sistema: 'Sistema de Turnos y Autogestión Ciudadana La Plata',\n  estado_reserva: 'CONFIRMADO_EXITOSO',\n  codigo_turno: codigoTurno,\n  tramite: tramite,\n  titular_dni: dni,\n  sede_asignada: sede,\n  fecha_asignada: fechaTurno,\n  horario_citacion: horaTurno,\n  requisitos_obligatorios_a_presentar: [\n    '1. DNI original con domicilio en la ciudad de La Plata (y fotocopia).',\n    '2. Licencia de conducir anterior (en caso de renovación o ampliación).',\n    '3. Boleta de pago del CENAT (Certificado Nacional de Antecedentes de Tránsito) abonada con 72 hs de anticipación.',\n    '4. Libre deuda de infracciones de tránsito del Juzgado de Faltas.',\n    '5. Concurrir con 15 minutos de anticipación con este código de turno.'\n  ],\n  mensaje_recordatorio: 'Si no puedes asistir, recuerda cancelar el turno con 24 hs de anticipación en el portal de turnos.',\n  portal_turnos_oficial: portal_tramites + '/turnos'\n});",
+        "specifyInputSchema": false
+      },
+      "id": "tool-turnos-bbdd",
+      "name": "Tool: Sistema de Turnos (Licencias & Trámites)",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1,
+      "position": [720, 760]
+    },
+    {
+      "parameters": {
+        "name": "registrar_reclamo_vecinal_147",
+        "description": "Sistema de Reclamos Vecinales 147 de La Plata. Invoca esta herramienta pasando la dirección exacta (calles) y motivo del reclamo para generar el ticket oficial de seguimiento.",
+        "jsCode": "// SIMULACIÓN REALISTA DE ATENCIÓN VECINAL Y RECLAMOS 147\nconst inputQuery = (typeof query === 'string' ? query : (query ? JSON.stringify(query) : '')).trim();\nconst portal_tramites = 'https://tramites.laplata.gob.ar';\n\nconst calleMatch = inputQuery.match(/calle\\s*[0-9]+/i) || inputQuery.match(/diagonal\\s*[0-9]+/i) || inputQuery.match(/av\\.?\\s*[0-9]+/i) || inputQuery.match(/[0-9]{1,3}\\s*(y|e\\/|entre|\\/)\\s*[0-9]{1,3}/i) || inputQuery.match(/calle\\s+[a-zA-Z]+/i);\n\nif (!calleMatch) {\n  return JSON.stringify({\n    estado: 'DATOS_INSUFICIENTES',\n    mensaje: 'Para registrar un reclamo en la Línea 147 y derivar la cuadrilla municipal se precisa la ubicación exacta (ejemplo: Calle 7 e/ 50 y 51, o Diagonal 74 y 10). Por favor, solicita la dirección exacta o intersección al vecino antes de generar el ticket.'\n  });\n}\n\nconst ubicacion = calleMatch[0];\n\nlet rubro = 'Mantenimiento Urbano General';\nlet plazoResolucion = '48 a 72 hs hábiles';\nif (inputQuery.toLowerCase().includes('luz') || inputQuery.toLowerCase().includes('luminaria') || inputQuery.toLowerCase().includes('farola') || inputQuery.toLowerCase().includes('foco')) {\n  rubro = 'Alumbrado Público y Luminarias';\n  plazoResolucion = '24 a 48 hs hábiles';\n} else if (inputQuery.toLowerCase().includes('bache') || inputQuery.toLowerCase().includes('pozo') || inputQuery.toLowerCase().includes('asfalto')) {\n  rubro = 'Bacheo y Mantenimiento de Vía Pública';\n  plazoResolucion = '3 a 5 días hábiles';\n} else if (inputQuery.toLowerCase().includes('poda') || inputQuery.toLowerCase().includes('arbol') || inputQuery.toLowerCase().includes('rama')) {\n  rubro = 'Poda Correctiva y Despeje de Ramas';\n  plazoResolucion = 'Cronograma semanal de cuadrilla comunal';\n} else if (inputQuery.toLowerCase().includes('basura') || inputQuery.toLowerCase().includes('residuo') || inputQuery.toLowerCase().includes('reciclado')) {\n  rubro = 'Higiene Urbana y Recolección No Habitual';\n  plazoResolucion = '24 hs hábiles';\n}\n\nconst ticketId = `REC-147-2026-${Math.floor(10000 + Math.random() * 90000)}`;\n\nreturn JSON.stringify({\n  sistema: 'Atención Ciudadana y Cuadrillas Urbanas 147 La Plata',\n  estado: 'RECLAMO_REGISTRADO_EN_SISTEMA',\n  numero_ticket_seguimiento: ticketId,\n  categoria_servicio: rubro,\n  ubicacion_registrada: ubicacion,\n  tiempo_estimado_resolucion: plazoResolucion,\n  estado_derivacion: 'Derivado automáticamente a la Delegación Comunal y Cuadrilla Técnica correspondiente',\n  mensaje_al_vecino: `Tu reporte fue cargado con éxito. Guarda el número ${ticketId} para consultar el avance en cualquier momento.`,\n  canal_seguimiento_online: portal_tramites + '/seguimiento-reclamos'\n});",
+        "specifyInputSchema": false
+      },
+      "id": "tool-reclamos-147-bbdd",
+      "name": "Tool: Atención Vecinal & Reclamos 147",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1,
+      "position": [840, 760]
+    },
+    {
+      "parameters": {
+        "name": "consultar_base_documental_google_drive",
+        "description": "Base Documental de Google Drive Oficial de la Municipalidad de La Plata. Busca ordenanzas, decretos, resoluciones, guías de trámites y formularios PDF/Docs almacenados en la carpeta comunal.",
+        "jsCode": "const query = ($input.first().json.query || $input.first().json.input || '').toLowerCase();\nconst google_drive_folder_url = 'https://drive.google.com/drive/folders/15RAFPM8n1VbhjlC2f8MaEuNLCp2ZZqvv?usp=drive_link';\n\nconst driveRepository = {\n  carpeta_oficial_google_drive: google_drive_folder_url,\n  folder_id: '15RAFPM8n1VbhjlC2f8MaEuNLCp2ZZqvv',\n  documentos_destacados: [\n    {\n      nombre: 'Guia_Integral_Tramites_La_Plata_2026.pdf',\n      descripcion: 'Detalle paso a paso de licencias, habilitaciones comerciales, exenciones y permisos de obra.',\n      enlace: google_drive_folder_url\n    },\n    {\n      nombre: 'Codigo_Tributario_APR_y_Calendario_Fiscal_2026.pdf',\n      descripcion: 'Tabla de alícuotas, fechas de vencimiento de Tasa SUM y planes de moratoria de APR.',\n      enlace: google_drive_folder_url\n    },\n    {\n      nombre: 'Reglamento_Juzgado_Faltas_La_Plata.pdf',\n      descripcion: 'Procedimiento formal de descargos, multas de tránsito y pago voluntario con 50% descuento.',\n      enlace: google_drive_folder_url\n    }\n  ],\n  mensaje: 'Toda la documentación oficial, resoluciones y ordenanzas se encuentran sincronizadas y disponibles en la carpeta compartida de Google Drive.'\n};\n\nreturn JSON.stringify(driveRepository);",
+        "specifyInputSchema": false
+      },
+      "id": "tool-google-drive-kb",
+      "name": "Tool: Google Drive (Base Documental)",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1,
+      "position": [960, 760]
+    },
+    {
+      "parameters": {
+        "name": "consultar_guia_turistica_e_historia",
+        "description": "Guía turística, cultural, patrimonial y de entretenimiento de la Ciudad de La Plata. Atractivos, eje cívico, historia de las diagonales, secretos masónicos, centros comerciales y polos gastronómicos.",
+        "jsCode": "// GUÍA TURÍSTICA, PATRIMONIO Y SECRETOS DE LA PLATA\nconst query = ($input.first().json.query || $input.first().json.input || '').toLowerCase();\nconst portal_turismo = 'https://turismo.laplata.gob.ar';\n\nconst turismoLaPlata = {\n  atractivos_imperdibles: {\n    destacados: [\n      'Catedral de la Inmaculada Concepción (Imponente templo neogótico, una de las catedrales más altas de América, con mirador en la torre y museo subterráneo).',\n      'Museo de La Plata de Ciencias Naturales (Ubicado en el Paseo del Bosque, referente mundial en paleontología y antropología).',\n      'República de los Niños (En Gonnet, el primer parque temático educativo de América Latina fundado en 1951).',\n      'Paseo Dardo Rocha (Centro cultural histórico frente a Plaza San Martín, epicentro de arte, teatro y cine).',\n      'Teatro Argentino (Uno de los teatros líricos más destacados del país, con conciertos y óperas de primer nivel).'\n    ],\n    secretos_y_curiosidades: [\n      'La traza urbanística perfecta diseñada por el arquitecto Pedro Benoit: una cuadrícula cruzada por diagonales mayores (73 y 74) que forman un rombo masónico perfecto.',\n      'La Piedra Fundacional se encuentra enterrada en el centro exacto de la Plaza Moreno desde el 19 de noviembre de 1882, con medallas, planos y documentos históricos que se abrirán en el bicentenario.',\n      'Cada seis cuadras exactas hay un parque o plaza pública, lo que hace de La Plata una de las ciudades con mayor espacio verde por habitante.'\n    ]\n  },\n  comercio_y_gastronomia: {\n    centros_comerciales: 'Centro Comercial de Calle 8 y Calle 12 (los paseos comerciales a cielo abierto más concurridos), y las galerías del microcentro.',\n    polo_gastronomico: 'Circuito Gastronómico de City Bell (cafeterías de especialidad, cocina de autor y restós gourmet) y el Polo Cultural & Gastronómico de Barrio Meridiano V (en la histórica estación provincial de trenes, con cervecerías artesanales y ferias de diseño).',\n    espacios_verdes: 'Paseo del Bosque (con lago navegable, Planetario y Jardín Botánico) y el Parque Ecológico Municipal de Villa Elisa.'\n  },\n  agenda_cultural: {\n    eventos: 'Ferias de artesanos y productores locales los fines de semana en Plaza Italia, Plaza Azcuénaga y Parque Saavedra.',\n    portal: portal_turismo\n  }\n};\n\nlet match = turismoLaPlata;\nif (query.includes('historia') || query.includes('secreto') || query.includes('catedral') || query.includes('museo') || query.includes('bosque') || query.includes('curiosidad')) {\n  match = { atractivos_imperdibles: turismoLaPlata.atractivos_imperdibles };\n} else if (query.includes('comer') || query.includes('restaurante') || query.includes('city bell') || query.includes('meridiano') || query.includes('calle 8') || query.includes('calle 12') || query.includes('compras')) {\n  match = { comercio_y_gastronomia: turismoLaPlata.comercio_y_gastronomia };\n} else if (query.includes('evento') || query.includes('agenda') || query.includes('fin de semana')) {\n  match = { agenda_cultural: turismoLaPlata.agenda_cultural };\n}\n\nreturn JSON.stringify(match);",
+        "specifyInputSchema": false
+      },
+      "id": "tool-turismo-kb",
+      "name": "Tool: Guía Turística y Secretos (KB)",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1,
+      "position": [1080, 760]
+    },
+    {
+      "parameters": {
+        "name": "consultar_sitios_y_redes_oficiales",
+        "description": "Directorio oficial de la Municipalidad de La Plata con portales web, redes sociales institucionales verificadas y teléfonos de emergencia 24 horas.",
+        "jsCode": "const directorio = {\n  municipio: 'Municipalidad de La Plata',\n  portal_web_principal: 'https://laplata.gob.ar',\n  portal_tramites: 'https://tramites.laplata.gob.ar',\n  portal_rentas_apr: 'https://apr.laplata.gob.ar',\n  carpeta_google_drive: 'https://drive.google.com/drive/folders/15RAFPM8n1VbhjlC2f8MaEuNLCp2ZZqvv?usp=drive_link',\n  redes_sociales_oficiales: {\n    instagram: '@laplataciudad',\n    facebook: '/LaPlataCiudad',\n    x_twitter: '@LaPlataCiudad'\n  },\n  telefonos_emergencia_24hs: {\n    atencion_vecinal_147: '147',\n    same_emergencias_medicas_107: '107',\n    defensa_civil_103: '103',\n    seguridad_urbana_911: '911'\n  }\n};\n\nreturn JSON.stringify(directorio);",
+        "specifyInputSchema": false
+      },
+      "id": "tool-redes-oficiales",
+      "name": "Tool: Directorio y Redes Oficiales",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1,
+      "position": [1200, 760]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst parserData = $node[\"⚙️ Configuración & Parser Web\"].json;\nconst fullText = item.output || item.text || 'He procesado tu consulta.';\n\nlet outputMode = parserData.userPreference;\nif (outputMode === 'auto') {\n  outputMode = parserData.messageType === 'audio' ? 'voice' : 'text';\n}\n\n// Limpiar URLs y formatos markdown del texto hablado para que suene 100% natural\nlet spokenText = fullText\n  .replace(/https?:\\/\\/[^\\s)]+/gi, 'el enlace oficial que te adjunto por escrito debajo')\n  .replace(/[*_#`~]/g, '')\n  .slice(0, 1000);\n\nif (!spokenText || spokenText.trim().length === 0) {\n  spokenText = 'He recibido tu consulta y aquí te comparto la información correspondiente.';\n}\n\nreturn {\n  json: {\n    ...parserData,\n    responseText: fullText,\n    spokenText: spokenText,\n    outputMode: outputMode\n  }\n};\n"
+      },
+      "id": "code-prepare-agent-response",
+      "name": "Preparar Salida del Agente",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [800, 540]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c2",
+              "leftValue": "={{ $json.outputMode }}",
+              "rightValue": "voice",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-should-send-voice",
+      "name": "¿Generar Audio TTS?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1080, 360]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/audio/speech",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"tts-1\",\n  \"input\": \"{{ ($json.spokenText || $json.responseText || 'Hola').replace(/\"/g, '\\\\\"').replace(/\\n/g, ' ') }}\",\n  \"voice\": \"alloy\",\n  \"response_format\": \"mp3\"\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "openai-tts-node",
+      "name": "OpenAI TTS (Texto a Voz)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1320, 240],
+      "credentials": {
+        "openAiApi": {
+          "id": "11Vo9TKbiyO0mnz9",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first();\nconst originalJson = $node[\"¿Generar Audio TTS?\"].json;\n\nlet audioBase64 = '';\ntry {\n  const buffer = await this.helpers.getBinaryDataBuffer(0, 'data');\n  if (buffer && buffer.length > 0) {\n    audioBase64 = buffer.toString('base64');\n  }\n} catch (e) {\n  if (item.binary && item.binary.data && item.binary.data.data && !item.binary.data.data.startsWith('filesystem')) {\n    audioBase64 = item.binary.data.data;\n  }\n}\n\nreturn {\n  json: {\n    ...originalJson,\n    audioBase64: audioBase64 ? `data:audio/mp3;base64,${audioBase64}` : null,\n    hasAudio: !!audioBase64\n  }\n};\n"
+      },
+      "id": "code-encode-tts-base64",
+      "name": "Empaquetar Audio Base64",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1540, 240]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\n\nconst responsePayload = {\n  status: 'success',\n  sessionId: item.sessionId,\n  text: item.responseText || item.output || 'Consulta procesada.',\n  spokenText: item.spokenText || null,\n  outputMode: item.outputMode || 'text',\n  audioUrl: item.audioBase64 || null,\n  quickReplies: item.quickReplies || [\n    { id: 'btn_mode_text', title: 'Modo Texto 📝', payload: 'btn_mode_text' },\n    { id: 'btn_mode_voice', title: 'Modo Voz 🎙️', payload: 'btn_mode_voice' }\n  ],\n  municipio: item.config?.nombre_municipio || 'Municipalidad de La Plata',\n  timestamp: new Date().toISOString()\n};\n\nreturn {\n  json: responsePayload\n};\n"
+      },
+      "id": "code-build-final-response",
+      "name": "Empaquetar Respuesta Final JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1780, 360]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type, Authorization"
+              }
+            ]
+          }
+        }
+      },
+      "id": "respond-web-chat-json",
+      "name": "Responder al Webhook (200 OK)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [2020, 360]
+    }
+  ],
+  "connections": {
+    "Webhook POST (Mensajes Web Chat)": {
+      "main": [
+        [
+          {
+            "node": "⚙️ Configuración & Parser Web",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⚙️ Configuración & Parser Web": {
+      "main": [
+        [
+          {
+            "node": "¿Es Mensaje de Voz?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Es Mensaje de Voz?": {
+      "main": [
+        [
+          {
+            "node": "Preparar Binario de Audio",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Enrutador de Comandos Web",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Binario de Audio": {
+      "main": [
+        [
+          {
+            "node": "OpenAI Whisper (Voz a Texto)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Whisper (Voz a Texto)": {
+      "main": [
+        [
+          {
+            "node": "Consolidar Audio Transcrito",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consolidar Audio Transcrito": {
+      "main": [
+        [
+          {
+            "node": "Enrutador de Comandos Web",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enrutador de Comandos Web": {
+      "main": [
+        [
+          {
+            "node": "Generar Bienvenida Web",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Confirmar Modo Texto",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Confirmar Modo Voz",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Agente IA Municipal 360 Web",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generar Bienvenida Web": {
+      "main": [
+        [
+          {
+            "node": "¿Generar Audio TTS?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirmar Modo Texto": {
+      "main": [
+        [
+          {
+            "node": "¿Generar Audio TTS?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirmar Modo Voz": {
+      "main": [
+        [
+          {
+            "node": "¿Generar Audio TTS?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente IA Municipal 360 Web": {
+      "main": [
+        [
+          {
+            "node": "Preparar Salida del Agente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model (GPT-4o Mini)": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agente IA Municipal 360 Web",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memoria Conversacional por Sesión Web": {
+      "ai_memory": [
+        [
+          {
+            "node": "Agente IA Municipal 360 Web",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Base de Datos APR (Deudas & Pagos)": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente IA Municipal 360 Web",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Base de Datos Juzgado de Faltas (Infracciones)": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente IA Municipal 360 Web",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Sistema de Turnos (Licencias & Trámites)": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente IA Municipal 360 Web",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Atención Vecinal & Reclamos 147": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente IA Municipal 360 Web",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Google Drive (Base Documental)": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente IA Municipal 360 Web",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Guía Turística y Secretos (KB)": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente IA Municipal 360 Web",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Directorio y Redes Oficiales": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente IA Municipal 360 Web",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Salida del Agente": {
+      "main": [
+        [
+          {
+            "node": "¿Generar Audio TTS?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Generar Audio TTS?": {
+      "main": [
+        [
+          {
+            "node": "OpenAI TTS (Texto a Voz)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Empaquetar Respuesta Final JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI TTS (Texto a Voz)": {
+      "main": [
+        [
+          {
+            "node": "Empaquetar Audio Base64",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Empaquetar Audio Base64": {
+      "main": [
+        [
+          {
+            "node": "Empaquetar Respuesta Final JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Empaquetar Respuesta Final JSON": {
+      "main": [
+        [
+          {
+            "node": "Responder al Webhook (200 OK)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

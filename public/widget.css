@@ -1,0 +1,719 @@
+/* ==========================================================================
+   🏛️ MUNICIPAL CHATBOT 360° - WIDGET UI & FLOATING BUBBLE (THEME INSTITUCIONAL)
+   Paleta: Verde Petróleo / Teal (#008d9b) & Gris Oscuro (#1e293b)
+   ========================================================================== */
+
+:root {
+  --mun-teal: #008d9b;
+  --mun-teal-dark: #006d77;
+  --mun-teal-light: #e6f6f8;
+  --mun-teal-badge: #d1f0f4;
+  --mun-teal-hover: #007784;
+
+  --mun-grey-dark: #1e293b;
+  --mun-grey-charcoal: #2b3648;
+  --mun-grey-light: #f1f5f9;
+  --mun-grey-subtle: #e2e8f0;
+  
+  --mun-bg: #ffffff;
+  --mun-bg-canvas: #f8fafc;
+  --mun-text-dark: #1e293b;
+  --mun-text-body: #475569;
+  --mun-text-muted: #64748b;
+  --mun-border: #e2e8f0;
+  
+  --mun-radius: 18px;
+  --mun-shadow: 0 20px 45px -10px rgba(0, 141, 155, 0.22), 0 0 1px rgba(30, 41, 59, 0.15);
+  --mun-font: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* ==========================================================================
+   1. FLOATING LAUNCHER BUTTON (GLOBO FLOTANTE DEL CHATBOT)
+   ========================================================================== */
+.mun-widget-launcher {
+  position: fixed;
+  bottom: 26px;
+  right: 26px;
+  z-index: 999999;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  font-family: var(--mun-font);
+  user-select: none;
+}
+
+.mun-launcher-tooltip {
+  background: #ffffff;
+  border: 1.5px solid var(--mun-border);
+  color: var(--mun-grey-dark);
+  padding: 10px 18px;
+  border-radius: 30px;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 10px 25px rgba(0, 141, 155, 0.12);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: munBounceTooltip 3s ease-in-out infinite;
+  transition: all 0.3s ease;
+}
+
+.mun-launcher-tooltip span.pulse-dot {
+  width: 9px;
+  height: 9px;
+  background: var(--mun-teal);
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 0 10px var(--mun-teal);
+}
+
+@keyframes munBounceTooltip {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.mun-launcher-btn {
+  width: 66px;
+  height: 66px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--mun-teal) 0%, var(--mun-teal-dark) 100%);
+  border: 3px solid #ffffff;
+  box-shadow: 0 12px 30px rgba(0, 141, 155, 0.4), 0 4px 12px rgba(30, 41, 59, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 28px;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+}
+
+.mun-launcher-btn:hover {
+  transform: scale(1.08) rotate(4deg);
+  box-shadow: 0 16px 36px rgba(0, 141, 155, 0.55), 0 0 25px rgba(0, 141, 155, 0.3);
+}
+
+.mun-launcher-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background: var(--mun-grey-dark);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #ffffff;
+}
+
+/* ==========================================================================
+   2. CHATBOT WINDOW (MODAL / FLYOUT)
+   ========================================================================== */
+.mun-chat-window {
+  position: fixed;
+  bottom: 104px;
+  right: 26px;
+  width: 430px;
+  max-width: calc(100vw - 32px);
+  height: 680px;
+  max-height: calc(100vh - 120px);
+  background: #ffffff;
+  border: 1px solid var(--mun-border);
+  border-radius: 24px;
+  box-shadow: var(--mun-shadow);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 999999;
+  font-family: var(--mun-font);
+  opacity: 0;
+  transform: translateY(20px) scale(0.95);
+  pointer-events: none;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mun-chat-window.mun-open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+/* Header */
+.mun-chat-header {
+  background: var(--mun-grey-dark);
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #ffffff;
+  border-bottom: 2px solid var(--mun-teal);
+}
+
+.mun-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mun-bot-avatar {
+  width: 42px;
+  height: 42px;
+  background: linear-gradient(135deg, var(--mun-teal) 0%, var(--mun-teal-dark) 100%);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: #ffffff;
+  position: relative;
+}
+
+.mun-online-dot {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 10px;
+  height: 10px;
+  background: #10b981;
+  border: 2px solid var(--mun-grey-dark);
+  border-radius: 50%;
+}
+
+.mun-header-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.mun-header-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.2px;
+}
+
+.mun-header-subtitle {
+  font-size: 11.5px;
+  color: var(--mun-teal-badge);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mun-header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.mun-header-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: #ffffff;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+.mun-header-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(1.08);
+}
+
+/* Mode Bar (Texto / Voz) */
+.mun-mode-bar {
+  background: var(--mun-grey-light);
+  padding: 8px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--mun-text-muted);
+  border-bottom: 1px solid var(--mun-border);
+}
+
+.mun-mode-toggle {
+  display: flex;
+  background: #ffffff;
+  border: 1px solid var(--mun-border);
+  border-radius: 20px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.mun-mode-btn {
+  background: transparent;
+  border: none;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 16px;
+  cursor: pointer;
+  color: var(--mun-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s ease;
+}
+
+.mun-mode-btn.active {
+  background: var(--mun-teal);
+  color: #ffffff;
+}
+
+/* Messages Area */
+.mun-chat-messages {
+  flex: 1;
+  padding: 18px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: #ffffff;
+}
+
+.mun-chat-messages::-webkit-scrollbar {
+  width: 5px;
+}
+.mun-chat-messages::-webkit-scrollbar-thumb {
+  background: var(--mun-border);
+  border-radius: 10px;
+}
+
+/* Message Bubble Styles */
+.mun-message-row {
+  display: flex;
+  flex-direction: column;
+  max-width: 86%;
+  animation: munFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes munFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.mun-message-row.mun-msg-bot {
+  align-self: flex-start;
+}
+
+.mun-message-row.mun-msg-user {
+  align-self: flex-end;
+}
+
+.mun-message-bubble {
+  padding: 12px 16px;
+  border-radius: var(--mun-radius);
+  font-size: 13.5px;
+  line-height: 1.55;
+  position: relative;
+  word-break: break-word;
+}
+
+.mun-msg-bot .mun-message-bubble {
+  background: var(--mun-teal-light);
+  color: var(--mun-text-dark);
+  border: 1px solid var(--mun-teal-badge);
+  border-bottom-left-radius: 4px;
+}
+
+.mun-msg-user .mun-message-bubble {
+  background: var(--mun-grey-dark);
+  color: #ffffff;
+  border-bottom-right-radius: 4px;
+}
+
+.mun-message-time {
+  font-size: 10.5px;
+  color: var(--mun-text-muted);
+  margin-top: 4px;
+  padding: 0 4px;
+}
+
+.mun-msg-user .mun-message-time {
+  text-align: right;
+}
+
+/* ==========================================================================
+   QUICK REPLIES & STRUCTURED ACTION BUTTONS (ORDENAMIENTO VISUAL)
+   ========================================================================== */
+.mun-quick-replies-wrapper {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mun-qr-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mun-qr-label {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--mun-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.mun-qr-label i {
+  color: var(--mun-teal);
+  font-size: 11px;
+}
+
+/* 1. Modos de Respuesta (Voz vs Mensaje) - 2 Columnas Destacadas */
+.mun-qr-grid-modes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.mun-qr-btn {
+  font-family: inherit;
+  border-radius: 14px;
+  padding: 10px 14px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.mun-qr-btn-text {
+  background: #ffffff;
+  border: 1.5px solid var(--mun-grey-dark);
+  color: var(--mun-grey-dark);
+}
+
+.mun-qr-btn-text:hover {
+  background: var(--mun-grey-dark);
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(30, 41, 59, 0.2);
+}
+
+.mun-qr-btn-voice {
+  background: var(--mun-teal);
+  border: 1.5px solid var(--mun-teal);
+  color: #ffffff;
+}
+
+.mun-qr-btn-voice:hover {
+  background: var(--mun-teal-hover);
+  border-color: var(--mun-teal-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 141, 155, 0.35);
+}
+
+/* 2. Trámites y Consultas Frecuentes - Cuadrícula Ordenada */
+.mun-qr-grid-topics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+@media (max-width: 380px) {
+  .mun-qr-grid-topics {
+    grid-template-columns: 1fr;
+  }
+}
+
+.mun-qr-btn-topic {
+  background: #ffffff;
+  border: 1.5px solid var(--mun-border);
+  color: var(--mun-text-dark);
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  justify-content: space-between;
+  text-align: left;
+  line-height: 1.3;
+}
+
+.mun-qr-arrow {
+  font-size: 10px;
+  color: var(--mun-text-muted);
+  transition: transform 0.2s ease, color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.mun-qr-btn-topic:hover {
+  background: var(--mun-teal-light);
+  border-color: var(--mun-teal);
+  color: var(--mun-teal-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(0, 141, 155, 0.15);
+}
+
+.mun-qr-btn-topic:hover .mun-qr-arrow {
+  color: var(--mun-teal-dark);
+  transform: translateX(3px);
+}
+
+/* Audio Player Component */
+.mun-audio-player {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #ffffff;
+  border: 1px solid var(--mun-teal-badge);
+  border-radius: 12px;
+  padding: 8px 12px;
+  margin-top: 8px;
+}
+
+.mun-audio-play-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--mun-teal);
+  border: none;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.mun-audio-play-btn:hover {
+  background: var(--mun-teal-hover);
+  transform: scale(1.08);
+}
+
+.mun-audio-progress-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mun-audio-bar {
+  width: 100%;
+  height: 4px;
+  background: var(--mun-grey-subtle);
+  border-radius: 2px;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.mun-audio-progress {
+  height: 100%;
+  width: 0%;
+  background: var(--mun-teal);
+  transition: width 0.1s linear;
+}
+
+.mun-audio-time {
+  font-size: 10px;
+  color: var(--mun-text-muted);
+  font-weight: 600;
+}
+
+/* Typing Indicator */
+.mun-typing-dots {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 14px;
+  background: var(--mun-teal-light);
+  border-radius: 20px;
+  width: fit-content;
+  border: 1px solid var(--mun-teal-badge);
+}
+
+.mun-typing-dots span {
+  width: 6px;
+  height: 6px;
+  background: var(--mun-teal);
+  border-radius: 50%;
+  animation: munTyping 1.4s infinite ease-in-out;
+}
+
+.mun-typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.mun-typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes munTyping {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
+  40% { transform: scale(1.2); opacity: 1; }
+}
+
+/* ==========================================================================
+   3. INPUT & RECORDING CONTROLS
+   ========================================================================== */
+.mun-chat-input-area {
+  padding: 14px 18px;
+  background: #ffffff;
+  border-top: 1px solid var(--mun-border);
+  position: relative;
+}
+
+.mun-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mun-text-input {
+  flex: 1;
+  border: 1.5px solid var(--mun-border);
+  border-radius: 24px;
+  padding: 10px 16px;
+  font-size: 13.5px;
+  font-family: inherit;
+  outline: none;
+  transition: all 0.2s ease;
+  background: var(--mun-bg-canvas);
+  color: var(--mun-text-dark);
+}
+
+.mun-text-input:focus {
+  border-color: var(--mun-teal);
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(0, 141, 155, 0.12);
+}
+
+.mun-action-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 15px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  flex-shrink: 0;
+}
+
+.mun-btn-mic {
+  background: var(--mun-teal-light);
+  color: var(--mun-teal-dark);
+  border: 1px solid var(--mun-teal-badge);
+}
+
+.mun-btn-mic:hover {
+  background: var(--mun-teal);
+  color: #ffffff;
+  transform: scale(1.05);
+}
+
+.mun-btn-send {
+  background: var(--mun-grey-dark);
+  color: #ffffff;
+}
+
+.mun-btn-send:hover {
+  background: #0f172a;
+  transform: scale(1.05);
+}
+
+/* Live Voice Recording Overlay */
+.mun-recording-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #ffffff;
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 18px;
+  z-index: 10;
+  border-top: 1px solid var(--mun-border);
+}
+
+.mun-recording-overlay.active {
+  display: flex;
+}
+
+.mun-rec-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mun-rec-pulse {
+  width: 12px;
+  height: 12px;
+  background: #ef4444;
+  border-radius: 50%;
+  animation: munRecPulse 1.2s infinite ease-in-out;
+}
+
+@keyframes munRecPulse {
+  0% { transform: scale(0.9); opacity: 0.8; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); }
+  70% { transform: scale(1.2); opacity: 1; box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+  100% { transform: scale(0.9); opacity: 0.8; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+.mun-rec-timer {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--mun-text-dark);
+}
+
+.mun-rec-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.mun-rec-btn-cancel {
+  background: var(--mun-grey-light);
+  border: 1px solid var(--mun-border);
+  color: var(--mun-text-muted);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mun-rec-btn-cancel:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.mun-rec-btn-stop {
+  background: var(--mun-teal);
+  border: none;
+  color: #ffffff;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mun-rec-btn-stop:hover {
+  background: var(--mun-teal-hover);
+}

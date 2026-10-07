@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal Oficial | Municipalidad de La Plata - Asistente Virtual 360°</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Estilos del Widget Flotante del Chatbot -->
+  <link rel="stylesheet" href="widget.css">
+
+  <style>
+    :root {
+      /* Paleta Institucional La Plata: Verde Petróleo / Teal & Gris Oscuro */
+      --theme-teal: #008d9b;
+      --theme-teal-dark: #006d77;
+      --theme-teal-light: #e6f6f8;
+      --theme-teal-badge: #d1f0f4;
+      --theme-teal-hover: #007784;
+      
+      --theme-grey-dark: #1e293b;
+      --theme-grey-charcoal: #2b3648;
+      --theme-grey-light: #f1f5f9;
+      --theme-grey-subtle: #e2e8f0;
+      
+      --theme-bg: #ffffff;
+      --theme-bg-canvas: #f8fafc;
+      --theme-card-bg: #ffffff;
+      --theme-border: #e2e8f0;
+      
+      --theme-text-dark: #1e293b;
+      --theme-text-body: #475569;
+      --theme-text-muted: #64748b;
+      
+      --theme-shadow-sm: 0 4px 12px rgba(0, 141, 155, 0.05);
+      --theme-shadow-md: 0 12px 28px rgba(0, 141, 155, 0.08);
+      --theme-shadow-lg: 0 20px 40px rgba(0, 141, 155, 0.12);
+      
+      --radius-pill: 30px;
+      --radius-card: 20px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    body {
+      background-color: var(--theme-bg-canvas);
+      color: var(--theme-text-dark);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* TOP BAR STRIP */
+    .top-strip {
+      background: #ffffff;
+      border-bottom: 1px solid var(--theme-border);
+      padding: 10px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      color: var(--theme-text-muted);
+    }
+
+    .top-strip-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      color: var(--theme-teal-dark);
+    }
+
+    .top-strip-phones {
+      display: flex;
+      gap: 20px;
+    }
+
+    .top-strip-phone-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--theme-text-dark);
+      font-weight: 700;
+    }
+    .top-strip-phone-item span.highlight {
+      color: var(--theme-teal-dark);
+      background: var(--theme-teal-badge);
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    /* MAIN HEADER */
+    .header-nav {
+      background: #ffffff;
+      padding: 18px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--theme-border);
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      text-decoration: none;
+    }
+
+    .brand-symbol {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, var(--theme-teal) 0%, var(--theme-teal-dark) 100%);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-size: 20px;
+      box-shadow: 0 4px 12px rgba(0, 141, 155, 0.25);
+    }
+
+    .brand-logo-text {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .brand-title-main {
+      font-size: 18px;
+      font-weight: 900;
+      color: var(--theme-grey-dark);
+      letter-spacing: -0.3px;
+      line-height: 1.1;
+    }
+
+    .brand-title-sub {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--theme-teal);
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+      align-items: center;
+    }
+
+    .nav-links a {
+      color: var(--theme-text-dark);
+      text-decoration: none;
+      font-size: 14.5px;
+      font-weight: 600;
+      transition: color 0.2s ease;
+    }
+
+    .nav-links a:hover, .nav-links a.active {
+      color: var(--theme-teal);
+      font-weight: 700;
+    }
+
+    .btn-dashboard-link {
+      background: var(--theme-grey-light);
+      border: 1px solid var(--theme-grey-subtle);
+      color: var(--theme-grey-dark);
+      padding: 10px 22px;
+      border-radius: var(--radius-pill);
+      font-size: 13.5px;
+      font-weight: 700;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-dashboard-link:hover {
+      background: var(--theme-grey-dark);
+      color: #ffffff;
+      box-shadow: 0 4px 14px rgba(30, 41, 59, 0.25);
+      transform: translateY(-1px);
+    }
+
+    /* HERO SECTION */
+    .hero-container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 60px 40px 40px;
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 40px;
+      align-items: center;
+    }
+
+    .hero-left {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .hero-tag {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--theme-grey-dark);
+      margin-bottom: 6px;
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .hero-tag span.badge-ia {
+      font-size: 12px;
+      font-weight: 800;
+      background: var(--theme-teal-badge);
+      color: var(--theme-teal-dark);
+      padding: 4px 10px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .hero-title-teal {
+      font-size: 46px;
+      font-weight: 900;
+      line-height: 1.15;
+      color: var(--theme-teal);
+      margin-bottom: 24px;
+      letter-spacing: -1px;
+    }
+
+    .hero-desc {
+      font-size: 15.5px;
+      color: var(--theme-text-body);
+      line-height: 1.7;
+      margin-bottom: 36px;
+      max-width: 520px;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 44px;
+      flex-wrap: wrap;
+    }
+
+    .btn-read-more {
+      background: var(--theme-grey-dark);
+      color: #ffffff;
+      padding: 14px 34px;
+      border-radius: var(--radius-pill);
+      font-size: 15px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 8px 20px rgba(30, 41, 59, 0.25);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .btn-read-more:hover {
+      background: #0f172a;
+      transform: translateY(-2px);
+      box-shadow: 0 12px 26px rgba(30, 41, 59, 0.35);
+    }
+
+    .btn-voice-cta {
+      background: var(--theme-teal);
+      color: #ffffff;
+      padding: 14px 28px;
+      border-radius: var(--radius-pill);
+      font-size: 14.5px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 8px 20px rgba(0, 141, 155, 0.3);
+      transition: all 0.25s ease;
+    }
+
+    .btn-voice-cta:hover {
+      background: var(--theme-teal-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 24px rgba(0, 141, 155, 0.4);
+    }
+
+    /* CAROUSEL / SLIDER DOTS */
+    .hero-dots {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .hero-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #bce7ec;
+      transition: all 0.2s ease;
+    }
+
+    .hero-dot.active {
+      width: 26px;
+      height: 12px;
+      border-radius: 10px;
+      background: var(--theme-teal);
+    }
+
+    /* HERO RIGHT - ILUSTRACIÓN EXACTA CON COLOR TEAL INSTITUCIONAL */
+    .hero-right {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 440px;
+    }
+
+    .hero-art-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      height: 420px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Giant Question Mark en color teal suave */
+    .art-question-bg {
+      position: absolute;
+      font-size: 340px;
+      font-weight: 900;
+      color: var(--theme-teal-light);
+      right: 20px;
+      bottom: -40px;
+      line-height: 1;
+      user-select: none;
+      z-index: 1;
+    }
+
+    /* Robot Mascota Institucional Teal */
+    .art-robot {
+      position: relative;
+      z-index: 3;
+      width: 200px;
+      height: 220px;
+      background: linear-gradient(135deg, var(--theme-teal) 0%, var(--theme-teal-dark) 100%);
+      border-radius: 50px 50px 40px 40px;
+      box-shadow: 0 16px 36px rgba(0, 141, 155, 0.35);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      animation: munFloatBot 4s ease-in-out infinite alternate;
+      border: 4px solid #ffffff;
+    }
+
+    @keyframes munFloatBot {
+      0% { transform: translateY(0px) rotate(0deg); }
+      100% { transform: translateY(-12px) rotate(2deg); }
+    }
+
+    .art-robot-ears {
+      position: absolute;
+      width: 228px;
+      display: flex;
+      justify-content: space-between;
+      top: 50px;
+      z-index: -1;
+    }
+    .art-ear {
+      width: 22px;
+      height: 38px;
+      background: var(--theme-grey-dark);
+      border-radius: 10px;
+    }
+
+    .art-robot-screen {
+      width: 145px;
+      height: 95px;
+      background: #0f172a;
+      border-radius: 32px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border: 3px solid #1e293b;
+      margin-top: 10px;
+    }
+
+    .art-robot-eyes {
+      display: flex;
+      gap: 28px;
+      margin-bottom: 6px;
+    }
+
+    .art-robot-eye {
+      width: 16px;
+      height: 24px;
+      background: #ffffff;
+      border-radius: 50%;
+      animation: munBlink 3.5s infinite;
+    }
+
+    @keyframes munBlink {
+      0%, 96%, 100% { transform: scaleY(1); }
+      98% { transform: scaleY(0.1); }
+    }
+
+    .art-robot-smile {
+      width: 26px;
+      height: 10px;
+      border-bottom: 4px solid #ffffff;
+      border-radius: 0 0 14px 14px;
+    }
+
+    .art-robot-dots {
+      width: 10px;
+      height: 10px;
+      background: #0f172a;
+      border-radius: 50%;
+      margin-top: 14px;
+    }
+
+    /* Floating Chat Bubbles en Gris Oscuro */
+    .art-speech-bubble-left {
+      position: absolute;
+      top: -24px;
+      left: 10px;
+      background: var(--theme-grey-dark);
+      color: #ffffff;
+      padding: 10px 16px;
+      border-radius: 16px 16px 4px 16px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 8px 18px rgba(30, 41, 59, 0.35);
+      z-index: 4;
+      animation: munPulseBubble 3s infinite alternate;
+    }
+
+    .art-speech-bubble-right {
+      position: absolute;
+      top: 60px;
+      right: -10px;
+      background: var(--theme-grey-dark);
+      color: #ffffff;
+      padding: 10px 16px;
+      border-radius: 16px 16px 16px 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 8px 18px rgba(30, 41, 59, 0.35);
+      z-index: 4;
+    }
+
+    .speech-dot {
+      width: 6px;
+      height: 6px;
+      background: #ffffff;
+      border-radius: 50%;
+    }
+
+    @keyframes munPulseBubble {
+      0% { transform: scale(1); }
+      100% { transform: scale(1.05); }
+    }
+
+    /* Base platform bar */
+    .art-platform {
+      position: absolute;
+      bottom: 10px;
+      width: 90%;
+      height: 8px;
+      background: var(--theme-grey-dark);
+      border-radius: 4px;
+      z-index: 2;
+    }
+
+    /* SERVICES SECTION */
+    .services-section {
+      max-width: 1280px;
+      margin: 30px auto 70px;
+      padding: 0 40px;
+    }
+
+    .section-header {
+      margin-bottom: 30px;
+    }
+
+    .section-header h2 {
+      font-size: 28px;
+      font-weight: 900;
+      color: var(--theme-grey-dark);
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+
+    .section-header p {
+      font-size: 14.5px;
+      color: var(--theme-text-muted);
+    }
+
+    .grid-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+      gap: 24px;
+    }
+
+    .service-card {
+      background: var(--theme-card-bg);
+      border: 1px solid var(--theme-border);
+      border-radius: var(--radius-card);
+      padding: 28px 24px;
+      box-shadow: var(--theme-shadow-sm);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .service-card:hover {
+      transform: translateY(-6px);
+      border-color: var(--theme-teal);
+      box-shadow: var(--theme-shadow-md);
+    }
+
+    .service-card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 18px;
+    }
+
+    .service-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      color: #ffffff;
+    }
+
+    .icon-grey { background: var(--theme-grey-dark); }
+    .icon-teal { background: var(--theme-teal); }
+    .icon-emerald { background: #10b981; }
+
+    .service-tag {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: var(--theme-teal-badge);
+      color: var(--theme-teal-dark);
+    }
+
+    .service-card h3 {
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--theme-text-dark);
+      margin-bottom: 10px;
+    }
+
+    .service-card p {
+      font-size: 13.5px;
+      color: var(--theme-text-body);
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    .service-card-action {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--theme-grey-dark);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .service-card:hover .service-card-action {
+      gap: 10px;
+      color: var(--theme-teal);
+    }
+
+    /* PROMO BANNER TURISMO */
+    .ai-banner {
+      max-width: 1280px;
+      margin: 0 auto 70px;
+      padding: 0 40px;
+    }
+
+    .ai-banner-card {
+      background: linear-gradient(135deg, var(--theme-teal-light) 0%, #ffffff 100%);
+      border: 1px solid var(--theme-teal-badge);
+      border-radius: var(--radius-card);
+      padding: 36px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 24px;
+      box-shadow: var(--theme-shadow-sm);
+    }
+
+    .ai-banner-content h3 {
+      font-size: 24px;
+      font-weight: 900;
+      color: var(--theme-grey-dark);
+      margin-bottom: 8px;
+    }
+
+    .ai-banner-content p {
+      font-size: 14.5px;
+      color: var(--theme-text-body);
+      max-width: 650px;
+      line-height: 1.6;
+    }
+
+    /* FOOTER */
+    footer {
+      background: #ffffff;
+      border-top: 1px solid var(--theme-border);
+      padding: 32px 40px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--theme-text-muted);
+    }
+
+    @media (max-width: 900px) {
+      .hero-container { grid-template-columns: 1fr; text-align: center; }
+      .hero-left { align-items: center; }
+      .hero-actions { justify-content: center; }
+      .top-strip { display: none; }
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOP INFORMATION STRIP -->
+  <div class="top-strip">
+    <div class="top-strip-left">
+      <i class="fa-solid fa-landmark-dome"></i>
+      <span>Municipalidad de La Plata • Provincia de Buenos Aires, Argentina</span>
+    </div>
+    <div class="top-strip-phones">
+      <div class="top-strip-phone-item">
+        <i class="fa-solid fa-phone"></i> Línea Comunal: <strong>147</strong>
+        <span class="highlight">24 HS</span>
+      </div>
+      <div class="top-strip-phone-item">
+        <i class="fa-solid fa-truck-medical"></i> SAME: <strong>107</strong>
+      </div>
+      <div class="top-strip-phone-item">
+        <i class="fa-solid fa-shield-halved"></i> Seguridad: <strong>911</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN HEADER -->
+  <header class="header-nav">
+    <a href="/landing.html" class="brand-group">
+      <div class="brand-symbol">
+        <i class="fa-solid fa-sun"></i>
+      </div>
+      <div class="brand-logo-text">
+        <span class="brand-title-main">LA PLATA CAPITAL</span>
+        <span class="brand-title-sub">MUNICIPALIDAD DE LA PLATA</span>
+      </div>
+    </a>
+
+    <ul class="nav-links">
+      <li><a href="/landing.html" class="active">Inicio</a></li>
+      <li><a href="#servicios">Nosotros</a></li>
+      <li><a href="#servicios">Servicios</a></li>
+      <li><a href="#turismo">Contacto</a></li>
+    </ul>
+
+    <a href="/index.html" class="btn-dashboard-link">
+      <i class="fa-solid fa-gauge-high"></i> Panel de Monitoreo
+    </a>
+  </header>
+
+  <!-- HERO SECTION -->
+  <main class="hero-container">
+    <div class="hero-left">
+      <div class="hero-tag">
+        Asistente Virtual
+        <span class="badge-ia">Inteligencia Artificial</span>
+      </div>
+      <div class="hero-title-teal">El Chatbot Responde<br>Tus Consultas</div>
+      
+      <p class="hero-desc">
+        Atención Ciudadana Oficial 360° para vecinos y turistas. Consulta turnos para licencias de conducir, regularización de tasas municipales en APR, infracciones en el Juzgado de Faltas, reclamos de la Línea 147 o descubre los atractivos históricos de la ciudad mediante mensajes de texto o notas de voz.
+      </p>
+
+      <div class="hero-actions">
+        <button class="btn-read-more" onclick="window.municipalChatInstance ? window.municipalChatInstance.toggleChat(true) : null">
+          <i class="fa-solid fa-comments"></i> Iniciar Consulta
+        </button>
+        <button class="btn-voice-cta" onclick="openVoiceChat()">
+          <i class="fa-solid fa-microphone"></i> Mensaje de Voz
+        </button>
+      </div>
+
+      <!-- PUNTOS INDICADORES DE CARRUSEL -->
+      <div class="hero-dots">
+        <span class="hero-dot active"></span>
+        <span class="hero-dot"></span>
+        <span class="hero-dot"></span>
+        <span class="hero-dot"></span>
+      </div>
+    </div>
+
+    <!-- ILUSTRACIÓN HERO: ROBOT INSTITUCIONAL TEAL & SIGNO DE PREGUNTA -->
+    <div class="hero-right">
+      <div class="hero-art-wrapper">
+        <!-- Signo de pregunta en fondo verde suave -->
+        <div class="art-question-bg">?</div>
+
+        <!-- Globos de conversación flotantes en Gris Oscuro -->
+        <div class="art-speech-bubble-left">
+          <span class="speech-dot"></span>
+          <span class="speech-dot"></span>
+          <span class="speech-dot"></span>
+        </div>
+
+        <div class="art-speech-bubble-right">
+          <span class="speech-dot"></span>
+          <span class="speech-dot"></span>
+          <span class="speech-dot"></span>
+        </div>
+
+        <!-- Robot Mascota Institucional Teal -->
+        <div class="art-robot" onclick="window.municipalChatInstance ? window.municipalChatInstance.toggleChat(true) : null" style="cursor: pointer;" title="¡Hola! Haz clic para consultar">
+          <div class="art-robot-ears">
+            <span class="art-ear"></span>
+            <span class="art-ear"></span>
+          </div>
+          <div class="art-robot-screen">
+            <div class="art-robot-eyes">
+              <span class="art-robot-eye"></span>
+              <span class="art-robot-eye"></span>
+            </div>
+            <div class="art-robot-smile"></div>
+          </div>
+          <div class="art-robot-dots"></div>
+        </div>
+
+        <!-- Barra base de plataforma -->
+        <div class="art-platform"></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- SECCIÓN DE SERVICIOS -->
+  <section class="services-section" id="servicios">
+    <div class="section-header">
+      <h2>Servicios y Trámites para Vecinos y Visitantes</h2>
+      <p>Accede de forma directa a la resolución integral de consultas sin esperas ni derivaciones</p>
+    </div>
+    
+    <div class="grid-cards">
+      <!-- Tarjeta 1: Licencias -->
+      <div class="service-card" onclick="openChatWithQuery('¿Cómo renuevo mi licencia de conducir y saco turno?')">
+        <div>
+          <div class="service-card-top">
+            <div class="service-icon icon-grey"><i class="fa-solid fa-id-card"></i></div>
+            <span class="service-tag">Turnos 24 HS</span>
+          </div>
+          <h3>Licencias de Conducir</h3>
+          <p>Turnos para renovación, trámites originales, duplicados y ampliación de categoría en sedes comunales.</p>
+        </div>
+        <div class="service-card-action">Consultar con Asistente <i class="fa-solid fa-arrow-right"></i></div>
+      </div>
+
+      <!-- Tarjeta 2: Tasas APR -->
+      <div class="service-card" onclick="openChatWithQuery('¿Dónde pago mis tasas de APR y cuál es el descuento por pago contado?')">
+        <div>
+          <div class="service-card-top">
+            <div class="service-icon icon-teal"><i class="fa-solid fa-receipt"></i></div>
+            <span class="service-tag">15% Descuento Contado</span>
+          </div>
+          <h3>Tasas Municipales (APR)</h3>
+          <p>Consulta de deuda de Tasa SUM, automotores, planes de pago y generación de código de pago electrónico.</p>
+        </div>
+        <div class="service-card-action">Consultar Padrón APR <i class="fa-solid fa-arrow-right"></i></div>
+      </div>
+
+      <!-- Tarjeta 3: Multas -->
+      <div class="service-card" onclick="openChatWithQuery('Quiero consultar si tengo multas de tránsito en el Juzgado de Faltas')">
+        <div>
+          <div class="service-card-top">
+            <div class="service-icon icon-grey"><i class="fa-solid fa-scale-balanced"></i></div>
+            <span class="service-tag">50% Pago Voluntario</span>
+          </div>
+          <h3>Juzgado de Faltas</h3>
+          <p>Consulta actas de infracción de tránsito por Patente o DNI y realiza tu descargo 100% online.</p>
+        </div>
+        <div class="service-card-action">Verificar Infracciones <i class="fa-solid fa-arrow-right"></i></div>
+      </div>
+
+      <!-- Tarjeta 4: Reclamos 147 -->
+      <div class="service-card" onclick="openChatWithQuery('Quiero registrar un reclamo de luminaria rota')">
+        <div>
+          <div class="service-card-top">
+            <div class="service-icon icon-teal"><i class="fa-solid fa-bullhorn"></i></div>
+            <span class="service-tag">Línea 147</span>
+          </div>
+          <h3>Atención Vecinal 147</h3>
+          <p>Reporta fallas de luminarias, baches, desobstrucción de sumideros y poda de ramas en tu barrio.</p>
+        </div>
+        <div class="service-card-action">Registrar Reclamo <i class="fa-solid fa-arrow-right"></i></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BANNER TURISMO E HISTORIA -->
+  <section class="ai-banner" id="turismo">
+    <div class="ai-banner-card">
+      <div class="ai-banner-content">
+        <h3>🌲 Guía Turística, Historia y Secretos Comunales</h3>
+        <p>
+          ¿Visitas la ciudad? El Asistente Virtual 360° te guía por la Catedral neogótica, el Museo de Ciencias Naturales, el trazado histórico de diagonales de Pedro Benoit y los polos gastronómicos de City Bell y Meridiano V.
+        </p>
+      </div>
+      <button class="btn-read-more" onclick="openChatWithQuery('¿Qué lugares históricos y secretos tiene la ciudad de La Plata?')">
+        <i class="fa-solid fa-map-location-dot"></i> Explorar Guía Turística
+      </button>
+    </div>
+  </section>
+
+  <!-- PIE DE PÁGINA -->
+  <footer>
+    <p>© 2026 Municipalidad de La Plata • Asistente Virtual 360° para Vecinos y Visitantes.</p>
+  </footer>
+
+  <!-- Scripts del Chatbot Web Widget -->
+  <script src="widget.js"></script>
+  <script>
+    // Inicializar el Widget Web
+    document.addEventListener('DOMContentLoaded', () => {
+      window.municipalChatInstance = new MunicipalChatWidget({
+        municipioNombre: 'Municipalidad de La Plata',
+        webhookUrl: '/api/chat/webhook'
+      });
+    });
+
+    function openChatWithQuery(query) {
+      if (window.municipalChatInstance) {
+        window.municipalChatInstance.toggleChat(true);
+        window.municipalChatInstance.appendUserMessage(query, 'text');
+        window.municipalChatInstance.sendMessagePayload({ message: query });
+      }
+    }
+
+    function openVoiceChat() {
+      if (window.municipalChatInstance) {
+        window.municipalChatInstance.toggleChat(true);
+        window.municipalChatInstance.setMode('voice');
+      }
+    }
+  </script>
+</body>
+</html>

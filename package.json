@@ -1,0 +1,16 @@
+{
+  "name": "dashboard-chatbot-laplata",
+  "version": "1.0.0",
+  "description": "Dashboard Ejecutivo y Operativo en Tiempo Real - Chatbot Municipal La Plata 360",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^18.0.6",
+    "express": "^4.19.2"
+  }
+}

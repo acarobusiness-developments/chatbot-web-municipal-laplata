@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Centro de Monitoreo y Atención Ciudadana | Municipalidad de La Plata</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="dashboard-wrapper">
+    <!-- TOP NAVIGATION BAR -->
+    <header class="top-nav">
+      <div class="nav-brand">
+        <div class="brand-logo">
+          <i class="fa-solid fa-landmark-dome"></i>
+        </div>
+        <div class="brand-titles">
+          <div class="brand-main">MUNICIPALIDAD DE LA PLATA</div>
+          <div class="brand-sub">Centro de Control & Monitoreo en Tiempo Real | Asistente Virtual Web 360°</div>
+        </div>
+      </div>
+
+      <div class="nav-status-group">
+        <div class="status-indicator">
+          <span class="pulse-dot"></span>
+          <span class="status-text">SISTEMA EN VIVO</span>
+        </div>
+        <div class="clock-display" id="clockDisplay">
+          <i class="fa-regular fa-clock"></i> <span id="timeString">--:--:--</span>
+        </div>
+        <a href="/landing.html" class="btn-refresh portal-link" style="text-decoration: none;" title="Ver Portal Ciudadano Landing">
+          <i class="fa-solid fa-globe"></i> Portal Vecino / Chatbot Web
+        </a>
+        <button class="btn-refresh" id="btnRefresh" title="Actualizar datos ahora">
+          <i class="fa-solid fa-arrows-rotate" id="refreshIcon"></i> Actualizar
+        </button>
+      </div>
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <main class="dashboard-content">
+
+      <!-- EXECUTIVE SUMMARY CARDS (KPIS) -->
+      <section class="kpi-grid">
+        <!-- KPI 1: Total Interacciones -->
+        <div class="kpi-card" data-accent="blue">
+          <div class="kpi-icon-wrapper"><i class="fa-solid fa-comments"></i></div>
+          <div class="kpi-data">
+            <span class="kpi-label">TOTAL INTERACCIONES</span>
+            <div class="kpi-value" id="kpiTotalInteractions">--</div>
+            <span class="kpi-badge badge-blue" id="kpi24hInteractions"><i class="fa-solid fa-arrow-trend-up"></i> -- hoy</span>
+          </div>
+        </div>
+
+        <!-- KPI 2: Reclamos 147 -->
+        <div class="kpi-card" data-accent="amber">
+          <div class="kpi-icon-wrapper"><i class="fa-solid fa-triangle-exclamation"></i></div>
+          <div class="kpi-data">
+            <span class="kpi-label">RECLAMOS LÍNEA 147</span>
+            <div class="kpi-value" id="kpiTotal147">--</div>
+            <span class="kpi-badge badge-green" id="kpi147Resueltos"><i class="fa-solid fa-circle-check"></i> --% resueltos</span>
+          </div>
+        </div>
+
+        <!-- KPI 3: Turnos Licencias -->
+        <div class="kpi-card" data-accent="purple">
+          <div class="kpi-icon-wrapper"><i class="fa-solid fa-calendar-check"></i></div>
+          <div class="kpi-data">
+            <span class="kpi-label">TURNOS LICENCIAS</span>
+            <div class="kpi-value" id="kpiTotalTurnos">--</div>
+            <span class="kpi-badge badge-purple"><i class="fa-solid fa-id-card"></i> Asignados</span>
+          </div>
+        </div>
+
+        <!-- KPI 4: Deuda APR Consultada -->
+        <div class="kpi-card" data-accent="cyan">
+          <div class="kpi-icon-wrapper"><i class="fa-solid fa-receipt"></i></div>
+          <div class="kpi-data">
+            <span class="kpi-label">CONSULTAS DEUDA APR</span>
+            <div class="kpi-value" id="kpiTotalApr">--</div>
+            <span class="kpi-badge badge-cyan" id="kpiAprMonto">$ -- gestionados</span>
+          </div>
+        </div>
+
+        <!-- KPI 5: Multas Juzgado Faltas -->
+        <div class="kpi-card" data-accent="rose">
+          <div class="kpi-icon-wrapper"><i class="fa-solid fa-car-burst"></i></div>
+          <div class="kpi-data">
+            <span class="kpi-label">INFRACCIONES / MULTAS</span>
+            <div class="kpi-value" id="kpiTotalFaltas">--</div>
+            <span class="kpi-badge badge-rose" id="kpiFaltasPct">--% c/ infracción</span>
+          </div>
+        </div>
+
+        <!-- KPI 6: Canal de Voz vs Texto -->
+        <div class="kpi-card" data-accent="emerald">
+          <div class="kpi-icon-wrapper"><i class="fa-solid fa-microphone-lines"></i></div>
+          <div class="kpi-data">
+            <span class="kpi-label">INTERACCIÓN POR VOZ</span>
+            <div class="kpi-value" id="kpiVoicePct">--%</div>
+            <span class="kpi-badge badge-emerald"><i class="fa-solid fa-waveform-lines"></i> Whisper & ElevenLabs</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- CHARTS SECTION -->
+      <section class="charts-section">
+        <!-- Chart 1: Distribución por Área -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">
+              <i class="fa-solid fa-chart-pie"></i> Distribución de Consultas por Área Municipal
+            </div>
+            <span class="chart-sub">Participación porcentual en tiempo real</span>
+          </div>
+          <div class="chart-body doughnut-body">
+            <canvas id="areaChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Chart 2: Reclamos 147 por Tipología -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">
+              <i class="fa-solid fa-chart-simple"></i> Reclamos Línea 147 por Tipología de Servicio
+            </div>
+            <span class="chart-sub">Alumbrado, Bacheo, Poda, Residuos, Sumideros</span>
+          </div>
+          <div class="chart-body">
+            <canvas id="reclamosChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Chart 3: Curva Horaria 24h -->
+        <div class="chart-card chart-span-2">
+          <div class="chart-header">
+            <div class="chart-title">
+              <i class="fa-solid fa-chart-line"></i> Demanda y Flujo de Mensajes en las Últimas 24 Horas
+            </div>
+            <span class="chart-sub">Evolución hora por hora del tráfico de WhatsApp</span>
+          </div>
+          <div class="chart-body">
+            <canvas id="hourlyChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Chart 4: Vecinos vs Turistas -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">
+              <i class="fa-solid fa-users"></i> Perfil Ciudadano: Vecinos vs Turistas
+            </div>
+            <span class="chart-sub">Trámites locales vs Atractivos turísticos</span>
+          </div>
+          <div class="chart-body doughnut-body">
+            <canvas id="userTypeChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Chart 5: Distribución Geográfica / Delegaciones -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">
+              <i class="fa-solid fa-map-location-dot"></i> Demanda Territorial por Delegación / Localidad
+            </div>
+            <span class="chart-sub">Casco Urbano, City Bell, Gonnet, Villa Elisa, Los Hornos...</span>
+          </div>
+          <div class="chart-body">
+            <canvas id="localidadesChart"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- LIVE STREAM / ACTIVITY TABLE -->
+      <section class="activity-section">
+        <div class="activity-header">
+          <div class="activity-title-group">
+            <div class="activity-title">
+              <i class="fa-solid fa-bolt-lightning text-amber"></i> Flujo de Interacciones en Vivo
+            </div>
+            <div class="activity-subtitle">Registro cronológico de consultas procesadas por la IA</div>
+          </div>
+
+          <div class="activity-filters">
+            <div class="filter-search">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="searchInput" placeholder="Buscar por ticket, DNI, teléfono, zona...">
+            </div>
+
+            <select id="filterArea" class="filter-select">
+              <option value="all">Todas las Áreas</option>
+              <option value="Reclamos 147">Reclamos 147</option>
+              <option value="APR - Tasas y Deuda">APR - Tasas y Deuda</option>
+              <option value="Juzgado de Faltas - Multas">Juzgado de Faltas - Multas</option>
+              <option value="Turnos Licencias">Turnos Licencias</option>
+              <option value="Turismo y Cultura">Turismo y Cultura</option>
+            </select>
+
+            <select id="filterCanal" class="filter-select">
+              <option value="all">Todos los Canales WhatsApp</option>
+              <option value="texto">📝 Texto WhatsApp</option>
+              <option value="audio">🎙️ Notas de Voz WhatsApp</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table" id="eventsTable">
+            <thead>
+              <tr>
+                <th>HORA / FECHA</th>
+                <th>CANAL</th>
+                <th>ÁREA MUNICIPAL</th>
+                <th>TICKET / EXPTE</th>
+                <th>CIUDADANO / TEL</th>
+                <th>DELEGACIÓN / ZONA</th>
+                <th>DETALLE PRINCIPAL</th>
+                <th>ESTADO</th>
+              </tr>
+            </thead>
+            <tbody id="eventsTableBody">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="dashboard-footer">
+      <div class="footer-left">
+        <strong>Municipalidad de La Plata</strong> &bull; Secretaría de Modernización y Gobierno Digital &bull; Plataforma Inteligente WhatsApp 147
+      </div>
+      <div class="footer-right">
+        <span class="live-pill"><span class="pulse-dot-sm"></span> Conectado a n8n Enterprise</span>
+      </div>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

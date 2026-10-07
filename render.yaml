@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: chatbot-web-municipal-laplata
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: N8N_URL
+        value: https://vps-5872382-x.dattaweb.com
+      - key: N8N_API_KEY
+        sync: false
+      - key: WORKFLOW_ID
+        value: 03HiGPMmFsxuOmt1
