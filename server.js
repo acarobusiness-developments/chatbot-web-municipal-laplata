@@ -14,7 +14,12 @@ const DB_PATH = path.join(__dirname, 'data', 'metrics_db.json');
 
 const N8N_URL = process.env.N8N_URL || 'https://vps-5872382-x.dattaweb.com';
 const N8N_API_KEY = process.env.N8N_API_KEY || '';
-const WORKFLOW_ID = process.env.WORKFLOW_ID || '03HiGPMmFsxuOmt1';
+const WHATSAPP_WORKFLOW_ID = process.env.WHATSAPP_WORKFLOW_ID || 'oV2qAm1FxkwBs6PY';
+const WEB_WORKFLOW_ID = process.env.WEB_WORKFLOW_ID || '03HiGPMmFsxuOmt1';
+const WORKFLOW_IDS = (process.env.WORKFLOW_IDS
+  ? process.env.WORKFLOW_IDS.split(',')
+  : [WHATSAPP_WORKFLOW_ID, WEB_WORKFLOW_ID]
+).map(s => s.trim()).filter(Boolean);
 
 // Keep track of synced execution IDs to avoid duplicates
 const processedExecutionIds = new Set();
@@ -456,17 +461,28 @@ app.delete('/api/events/purge', (req, res) => {
 function initProcessedIds() {
   if (!N8N_API_KEY) return;
   const options = { headers: { 'X-N8N-API-KEY': N8N_API_KEY } };
-  https.get(`${N8N_URL}/api/v1/executions?workflowId=${WORKFLOW_ID}&limit=25`, options, (res) => {
-    let raw = '';
-    res.on('data', chunk => raw += chunk);
-    res.on('end', () => {
-      try {
-        const json = JSON.parse(raw);
-        (json.data || []).forEach(item => processedExecutionIds.add(item.id));
-        console.log(`[INIT] Initialized ${processedExecutionIds.size} past execution IDs.`);
-      } catch (e) {}
-    });
-  }).on('error', () => {});
+  const now = Date.now();
+
+  WORKFLOW_IDS.forEach(wfId => {
+    https.get(`${N8N_URL}/api/v1/executions?workflowId=${wfId}&limit=50`, options, (res) => {
+      let raw = '';
+      res.on('data', chunk => raw += chunk);
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(raw);
+          const list = json.data || [];
+          list.forEach(item => {
+            const ageMs = now - new Date(item.startedAt).getTime();
+            // Cache executions older than 30 minutes, allowing recent test executions to be ingested
+            if (ageMs > 30 * 60 * 1000) {
+              processedExecutionIds.add(item.id);
+            }
+          });
+          console.log(`[INIT] Cached older executions for workflow ${wfId}. Total cached: ${processedExecutionIds.size}`);
+        } catch (e) {}
+      });
+    }).on('error', () => {});
+  });
 }
 initProcessedIds();
 
@@ -478,64 +494,74 @@ function pollN8nExecutions() {
     headers: { 'X-N8N-API-KEY': N8N_API_KEY }
   };
 
-  https.get(`${N8N_URL}/api/v1/executions?workflowId=${WORKFLOW_ID}&limit=10`, options, (res) => {
-    let raw = '';
-    res.on('data', chunk => raw += chunk);
-    res.on('end', () => {
-      try {
-        const json = JSON.parse(raw);
-        const list = json.data || [];
+  WORKFLOW_IDS.forEach(wfId => {
+    https.get(`${N8N_URL}/api/v1/executions?workflowId=${wfId}&limit=10`, options, (res) => {
+      let raw = '';
+      res.on('data', chunk => raw += chunk);
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(raw);
+          const list = json.data || [];
 
-        // Check each execution
-        list.forEach(item => {
-          if (item.status === 'success' && !processedExecutionIds.has(item.id)) {
-            processedExecutionIds.add(item.id);
+          list.forEach(item => {
+            if (item.status === 'success' && !processedExecutionIds.has(item.id)) {
+              processedExecutionIds.add(item.id);
 
-            // Fetch execution details
-            https.get(`${N8N_URL}/api/v1/executions/${item.id}?includeData=true`, options, (detailRes) => {
-              let detailRaw = '';
-              detailRes.on('data', c => detailRaw += c);
-              detailRes.on('end', () => {
-                try {
-                  const detailJson = JSON.parse(detailRaw);
-                  const runData = detailJson.data?.resultData?.runData || {};
+              // Fetch execution details
+              https.get(`${N8N_URL}/api/v1/executions/${item.id}?includeData=true`, options, (detailRes) => {
+                let detailRaw = '';
+                detailRes.on('data', c => detailRaw += c);
+                detailRes.on('end', () => {
+                  try {
+                    const detailJson = JSON.parse(detailRaw);
+                    const runData = detailJson.data?.resultData?.runData || {};
 
-                  // Check if this execution ran through the chatbot agent / prep node
-                  const prepNode = runData['Preparar Salida del Agente'];
-                  const parserNode = runData['⚙️ Configuración & Parser WhatsApp'];
+                    // Check if this execution ran through the chatbot agent / prep node
+                    const prepNode = runData['Preparar Salida del Agente'] || runData['Empaquetar Respuesta Final JSON'];
+                    const parserNode = runData['⚙️ Configuración & Parser WhatsApp'] || runData['⚙️ Configuración & Parser Web'];
 
-                  if (prepNode && prepNode[0]?.data?.main?.[0]?.[0]?.json) {
-                    const prepData = prepNode[0].data.main[0][0].json;
-                    const parserData = parserNode ? parserNode[0]?.data?.main?.[0]?.[0]?.json : null;
+                    if (prepNode && prepNode[0]?.data?.main?.[0]?.[0]?.json) {
+                      const prepData = prepNode[0].data.main[0][0].json;
+                      const parserData = parserNode ? parserNode[0]?.data?.main?.[0]?.[0]?.json : null;
 
-                    const parsedEvent = parseInteractionData(
-                      prepData.responseText || prepData.spokenText,
-                      parserData || prepData,
-                      item.startedAt || new Date().toISOString()
-                    );
+                      const responseContent = prepData.responseText || prepData.spokenText || prepData.text || prepData.output;
+                      if (!responseContent) return;
 
-                    const db = readDB();
-                    // Avoid duplicating by timestamp & phone
-                    const exists = db.events.some(e => e.telefono === parsedEvent.telefono && Math.abs(new Date(e.timestamp) - new Date(parsedEvent.timestamp)) < 2000);
-                    if (!exists) {
-                      parsedEvent.id = `evt_${(db.events.length + 1).toString().padStart(5, '0')}`;
-                      db.events.push(parsedEvent);
-                      writeDB(db);
-                      console.log(`[N8N SYNC] Ingested Live WhatsApp Chat Execution ${item.id} -> ${parsedEvent.area} (${parsedEvent.nombre})`);
+                      const parsedEvent = parseInteractionData(
+                        responseContent,
+                        parserData || prepData,
+                        item.startedAt || new Date().toISOString()
+                      );
+
+                      const isWhatsApp = Boolean(runData['⚙️ Configuración & Parser WhatsApp'] || runData['Webhook POST (Mensajes WhatsApp)']);
+                      parsedEvent.canal = (parserData && (parserData.messageType === 'audio' || parserData.userPreference === 'voice')) ? 'audio' : 'texto';
+
+                      const db = readDB();
+                      // Avoid duplicating by timestamp & phone or ticket
+                      const exists = db.events.some(e => 
+                        (e.telefono === parsedEvent.telefono || (e.ticket && parsedEvent.ticket && e.ticket === parsedEvent.ticket)) && 
+                        Math.abs(new Date(e.timestamp) - new Date(parsedEvent.timestamp)) < 5000
+                      );
+                      if (!exists) {
+                        parsedEvent.id = `evt_${(db.events.length + 1).toString().padStart(5, '0')}`;
+                        db.events.push(parsedEvent);
+                        writeDB(db);
+                        console.log(`[N8N SYNC] Ingested Live ${isWhatsApp ? 'WhatsApp' : 'Web'} Execution ${item.id} -> ${parsedEvent.area} (${parsedEvent.nombre || parsedEvent.telefono})`);
+                      }
                     }
+                  } catch (e) {
+                    // Silent catch for incomplete payloads
                   }
-                } catch (e) {
-                  // Silent catch for incomplete payloads
-                }
+                });
               });
-            });
-          }
-        });
-      } catch (err) {
-        // Silent catch for network hiccups
-      }
-    });
-  }).on('error', () => {});
+            }
+          });
+        } catch (err) {
+          // Silent catch for network hiccups
+        }
+      });
+    }).on('error', () => {});
+  });
 }
 
 // Start polling n8n executions every 4 seconds
